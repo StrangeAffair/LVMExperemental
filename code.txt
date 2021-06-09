@@ -1,0 +1,37 @@
+function main():
+// platform x86;
+// system   linux;
+// platform:
+//	x86
+// system:
+//	linux
+labels:
+	start, finish;
+vars:
+	Int64 result;
+	Size  i;
+//code section
+begin
+	move  i, 0;
+	
+	const {"Int64", 20};
+start:
+	load  i;
+	const {"Int64", 6};
+	jge   finish;
+	
+	something i;
+	
+	jump  start;
+finish:
+	ret;
+end
+
+function something(Size i):
+begin
+	add   {"Int64", 15};
+	
+	inc   i;
+	
+	ret;
+end
