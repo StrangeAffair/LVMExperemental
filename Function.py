@@ -1,7 +1,7 @@
 class PFunction:
     def __init__(self, name, fn):
-        if (fn.__name__.lower() != name.lower()):
-            raise RuntimeError("bad function name")
+        #if (fn.__name__.lower() != name.lower()):
+        #    raise RuntimeError("bad function name")
         #for prop in dir(fn):
         #    print(prop)
         #    print(getattr(fn, prop))
@@ -20,6 +20,9 @@ class LFunction:
         self.name      = name
         self.code      = []
         self.labels    = dict()
+        self.args      = dict()
+        self.vars      = dict()
+            
     
     def __getitem__(self, key):
         print(self.labels)

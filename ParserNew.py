@@ -8,51 +8,107 @@ from Argument import Arg
 
 import Builtins
 
-# const.Int64 20
-#   -> b-ins.const_int64(state* st, void* value)
 
-# THIS ONE, but syntax sugar above
-# const  {"Int64", 20}
-#   -> b-ins.const(state* st, arg* value)
-#      -> if (value -> type == "int64"):
-#             const_int64(value->data)
 
-"""
-  const
-  memory
-  cstack
-  dstack
-  ...
-"""
+class Parser:
+    def __init__(self, lexer):
 
-"""
-  const 65 -> {Int64, 65}
-  ...
-  
-  store 0  -> memory[0] = dstack[-1]
-  load  0  -> dstack[0] = memory[0]
-  
-  ???      -> memory[x] = cstack[-1]
-  ???      -> cstack[0] = memory[x]
-  
-  ???      -> reg a = memory[0]
-  ???      -> reg a = dstack[-1]
-  ???      -> reg a = 
-"""
-
-class Variable:
-    def __init__(self, name, type, value, location=None):
-        self.name  = name
-        self.type  = type
-        self.value = value
-        self.loc   = location
+def ParseFile(lexer):
+    context = dict()
     
-    def __repr__(self):
-        return f"{self.loc}.{self.name} = ({self.type}, {self.value})"
+    while True:
+        try:
+            token = lexer.Current()
+        except StopIteration:
+            break
+        
+        
+        if token == "import":
+            pass
+        
+        if token == "function":
+            function = ParseFunction(lexer, context)
+            name     = function.name
+            
+            if name not in context:
+                context[name] = function
+            else:
+                context[name].code   = function.code
+                context[name].labels = function.labels
+
+def ParseFunction(lexer, context):
+    token = lexer.Current()
+    if token != "function":
+        raise SyntaxError("function must start with 'function' keyword")
+    token = lexer.Next()
     
-    def __getattr__(self, name):
-        if (name == "data"):
-            return self.value
+    token = lexer.Current()
+    if (token.type != "ID"):
+        raise SyntaxError(f"bad name of function {token.data}")
+    name     = token.data
+    function = LFunction(context, name)
+    token    = lexer.Next()
+    
+
+    ParseArgs(function)
+    
+    token = self.lexer.Next()
+    while True:
+        token = self.lexer.Current()
+        if (token.type == "ID") and (token.data == "labels"):
+            self.ParseLabels(fn)
+            continue
+        if (token.type == "ID") and (token.data == "vars"):
+            self.ParseVars(fn)
+            continue
+        if (token.type == "keyword") and (token.data == "begin"):
+            self.ParseCode(fn)
+            break
+        raise RuntimeError("unrecognized section of function")
+    
+    return fn
+
+def ParseArgs(function):
+    token = self.lexer.Current()
+    if (token.type != "LParent"):
+        raise RuntimeError("bad call of ParseArgs")
+    token = self.lexer.Next()
+    
+    if not hasattr(function, "args"):
+        function.args = dict()
+    
+    count = 0
+    while True:
+        token = self.lexer.Current()
+        if (token.type == "RParent"):
+            break
+        
+        if count > 0:
+            if (token.type != "Comma"):
+                raise SyntaxError("expected comma")
+            self.lexer.Next()
+        
+        token = self.lexer.Current()
+        if (token.type != "ID"):
+            raise SyntaxError("expected type name")
+        type  = token.data
+        
+        token = self.lexer.Next()
+        if (token.type != "ID"):
+            raise SyntaxError("expected arg name")            
+        name  = token.data
+        
+        function.args[count] = Variable(name, type, None, function.name + ".args")
+        function.args[name]  = function.args[count]
+        count += 1
+        
+        self.lexer.Next()
+    
+    token = self.lexer.Current()
+    if (token.type != "RParent"):
+        raise RuntimeError("bad end of call of ParseArgs")        
+    token = self.lexer.Next()
+    
 
 class Parser:
     def __init__(self, lexer):
@@ -73,121 +129,26 @@ class Parser:
         }
     
     def ParseFile(self, context):
-        while True:
-            try:
+        try:
+            while True:
                 token = self.lexer.Current()
-            except StopIteration:
-                break
             
-            
-            if token == "import":
-                pass
-            
-            if token == "function":
-                function = self.ParseFunction(context)
-                name     = function.name
+                if (token.type == "keyword") and (token.data == "function"):
+                    fn = self.ParseFunction(context)
+                    if fn.name not in self.context:
+                        self.context[fn.name] = fn
+                    else:
+                        self.context[fn.name].code   = fn.code
+                        self.context[fn.name].labels = fn.labels
                 
-                if name not in context:
-                    context[name] = function
-                else:
-                    context[name].code   = function.code
-                    context[name].labels = function.labels
+                if (token.type == "keyword") and (token.data == "import"):
+                    pass
+        except StopIteration as e:
+            return self.context
         
-        return context
     
     def ParseFunction(self, context):
-        token = self.lexer.Current()
-        if token != "function":
-            raise SyntaxError("function must start with 'function' keyword")
-        token = self.lexer.Next()
         
-        token = self.lexer.Current()
-        if (token.type != "ID"):
-            raise SyntaxError(f"bad name of function {token.data}")
-        function = LFunction(context, token.data)
-        token    = self.lexer.Next()
-        
-        # args: (...):
-        self.ParseArgs(function)
-        token = self.lexer.Next()
-        
-        while True:
-            token = self.lexer.Current()
-            if (token.type == "ID") and (token.data == "labels"):
-                self.ParseLabels(function)
-                continue
-            if (token.type == "ID") and (token.data == "vars"):
-                self.ParseVars(function)
-                continue
-            if (token.type == "keyword") and (token.data == "begin"):
-                self.ParseCode(function)
-                break
-            raise RuntimeError("unrecognized section of function")
-        
-        return function
-
-    def ParseArgs(self, function):
-        assert(hasattr(function, "args"))
-        
-        token = self.lexer.Current()
-        if token != '(':
-            raise RuntimeError("bad call of ParseArgs")
-        token = self.lexer.Next()
-        
-        # argc == 0
-        token = self.lexer.Current()
-        if token == ')':
-            token = self.lexer.Next()
-            return
-        
-        # argc == 1
-        token = self.lexer.Current()
-        if (token.type != "ID"):
-            raise SyntaxError("expected type name")
-        type  = token.data
-        token = self.lexer.Next()
-        
-        token = self.lexer.Current()
-        if (token.type != "ID"):
-            raise SyntaxError("expected arg name")
-        name  = token.data
-        token = self.lexer.Next()
-        
-        function.args[0]    = Variable(name, type, None, function.name + ".args")
-        function.args[name] = function.args[0]        
-        
-        # argc >= 2
-        count = 1
-        while True:
-            token = self.lexer.Current()
-            if token == ')':
-                break
-            
-            if (token.type != "Comma"):
-                raise SyntaxError("expected comma")
-            self.lexer.Next()
-            
-            token = self.lexer.Current()
-            if (token.type != "ID"):
-                raise SyntaxError("expected type name")
-            type  = token.data
-            token = self.lexer.Next()
-            
-            token = self.lexer.Current()
-            if (token.type != "ID"):
-                raise SyntaxError("expected arg name")            
-            name  = token.data
-            token = self.lexer.Next()
-            
-            function.args[count] = Variable(name, type, None, function.name + ".args")
-            function.args[name]  = function.args[count]
-            count += 1
-            
-        token = self.lexer.Current()
-        if (token.type != "RParent"):
-            raise RuntimeError("bad end of call of ParseArgs")        
-        token = self.lexer.Next()    
-
     
     def ParseLabels(self, function):
         token = self.lexer.Current()
@@ -220,7 +181,7 @@ class Parser:
         
         return function
     
-
+    
     
     def ParseVars(self, function):
         token = self.lexer.Current()
@@ -371,87 +332,3 @@ class Parser:
                 token = self.lexer.Next()
         
         return retval
-
-class CStackCell:
-    def __repr__(self):
-        return f"{self.function.name} {self.args}"
-    
-    def __init__(self, state, function, ip, args):
-        self.function = function
-        self.ip       = 0
-        self.args     = dict()
-        
-        if args is not None:
-            for i in range(len(args)):
-                if (args[i].type == "Var"):
-                    name = args[i].data
-                    prev = state.cstack[-1]
-                    
-                    if name in prev.args:
-                        self.args[name] = prev.args[name]
-                        self.args[i]    = self.args[name]
-                    if name in prev.vars:
-                        self.args[name] = prev.vars[name]
-                        self.args[i]    = self.args[name]                        
-        
-        if hasattr(function, "vars"):
-            self.vars = function.vars.copy()
-        else:
-            self.vars = dict()
-
-class State:
-    def __init__(self):
-        self.ip     = 0
-        self.cstack = []
-        self.dstack = []
-        self.memory = dict()
-        #self.vars   = dict()
-
-file   = File  ("code.txt")
-lexer  = Lexer (file)
-parser = Parser(lexer)
-
-def call(state, function, args):
-    state.cstack[-1].ip = state.ip
-    
-    state.cstack.append(CStackCell(state, function, 0, args))
-    
-    state.function = function
-    state.ip       = 0
-
-def run(function):
-    state    = State()
-    state.cstack   = [CStackCell(state, function, 0, None)]
-    state.dstack   = []
-    state.function = function
-    state.ip       = 0
-    
-    while state.ip is not None:
-        cmd = state.function.code[state.ip]
-        state.ip += 1
-        while True:
-            if isinstance(cmd.fn, PFunction):
-                cmd.fn(state, cmd.args)
-                break
-            if isinstance(cmd.fn, LFunction):
-                call(state, cmd.fn, cmd.args)
-                break
-            raise RuntimeError("wrong type of function")
-        print(state.dstack)
-        print(state.ip)
-
-print(file.content)
-print()
-file = parser.ParseFile(parser.context)
-
-for key, value in file.items():
-    if isinstance(value, LFunction):
-        for element in value.code: 
-            print(element)
-        print()
-print()
-
-#print(file)
-#print()
-
-run(file["main"])

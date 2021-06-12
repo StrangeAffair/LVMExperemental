@@ -1,17 +1,30 @@
 # TO DO: Delete
+import Types
 from Argument import Arg
 
 def MOVE(state, args):
-    if (len(args) != 2):
-        raise RuntimeError()
+    assert(len(args) == 2)
+    assert(args[0].type == "Var")
     
-    var   = args[0]
-    value = args[1]
+    function = state.cstack[-1]
+    variable = args[0]
+    value    = args[1]
     
-    if (var.type != "Var"):
-        raise RuntimeError()
-    name = var.data
-    var  = state.cstack[-1].vars[name]
+    name = variable.data
+    if name in function.vars:
+        variable = function.vars[name]
+    if name in function.args:
+        variable = function.args[name]
+    
+    if value.type == "Var":
+        name = value.data
+        if name in function.vars:
+            value = function.vars[name]
+        if name in function.args:
+            value = function.args[name]
+    
+    # now "variable" and "value" are objects
+    if variable.type != value.typ
     
     if (value.type != "Unknown") and (var.type != value.type):
         raise TypeError("bad value type")

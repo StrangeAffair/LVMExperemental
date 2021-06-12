@@ -68,26 +68,34 @@ class Lexer:
                 if char == "/":
                     while char != '\n':
                         char = self.file.Next()
+            
             if char == ",":
                 self.file.Next()
-                return Token("Comma", None, line, column)
+                type = Token.GetType(',')
+                return Token(type, None, line, column)
             if char == ":":
                 self.file.Next()
-                return Token("Colon", None, line, column)
+                type = Token.GetType(':')
+                return Token(type, None, line, column)
             if char == ";":
                 self.file.Next()
+                type = Token.GetType(';') 
                 return Token("Semicolon", None, line, column)
             if char == "(":
                 self.file.Next()
+                type = Token.GetType('(')
                 return Token("LParent", None, line, column)
             if char == ")":
                 self.file.Next()
+                type = Token.GetType(')')
                 return Token("RParent", None, line, column)
             if char == "{":
                 self.file.Next()
+                type = Token.GetType('{')
                 return Token("LBrace", None, line, column)                
             if char == "}":
                 self.file.Next()
+                type = Token.GetType('}')
                 return Token("RBrace", None, line, column)                
             
             
